@@ -47,8 +47,12 @@ fn spans(cells: Vec<(char, Style)>) -> Vec<Span<'static>> {
 }
 
 pub fn bar(e: &DiaryEntry, rx: Option<&Prescription>, width: usize) -> Vec<Span<'static>> {
-    let (bed, onset, fw, oob) =
-        (e.bedtime.offset(), e.sleep_onset().offset(), e.final_wake.offset(), e.out_of_bed.offset());
+    let (bed, onset, fw, oob) = (
+        e.bedtime.offset(),
+        e.sleep_onset().offset(),
+        e.final_wake.offset(),
+        e.out_of_bed.offset(),
+    );
     let ticks: Vec<usize> = TICKS.iter().map(|&t| tick_col(t, width)).collect();
     let cells = (0..width)
         .map(|c| {

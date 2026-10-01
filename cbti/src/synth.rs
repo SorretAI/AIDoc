@@ -13,7 +13,10 @@ struct Lcg(u64);
 
 impl Lcg {
     fn next(&mut self) -> f64 {
-        self.0 = self.0.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+        self.0 = self
+            .0
+            .wrapping_mul(6364136223846793005)
+            .wrapping_add(1442695040888963407);
         ((self.0 >> 33) as f64) / ((1u64 << 31) as f64)
     }
     /// Roughly normal (sum of uniforms).
@@ -39,10 +42,13 @@ pub fn generate(id: &str, today: NaiveDate) -> Subject {
         if matches!(day, 4 | 17 | 24) {
             continue;
         }
-        if day == 14 {
-            if let Recommendation::Initial { rx, .. } = recommend(&s, night) {
-                s.add_prescription(Prescription { note: "Initial window (session 2)".into(), ..rx });
-            }
+        if day == 14
+            && let Recommendation::Initial { rx, .. } = recommend(&s, night)
+        {
+            s.add_prescription(Prescription {
+                note: "Initial window (session 2)".into(),
+                ..rx
+            });
         }
         let e = match s.prescription_for(night).cloned() {
             None => baseline_night(&mut r, night, day),
@@ -57,14 +63,19 @@ pub fn generate(id: &str, today: NaiveDate) -> Subject {
             number: 1,
             date: Some(started),
             isi: Some(19),
-            done: ["dx", "screen", "isi", "meds", "diary"].map(String::from).to_vec(),
-            notes: "Long sleep latency and early waking for 2 years. Zolpidem 5 mg most nights.".into(),
+            done: ["dx", "screen", "isi", "meds", "diary"]
+                .map(String::from)
+                .to_vec(),
+            notes: "Long sleep latency and early waking for 2 years. Zolpidem 5 mg most nights."
+                .into(),
         },
         SessionRecord {
             number: 2,
             date: Some(started + Duration::days(14)),
             isi: None,
-            done: ["review", "rise", "window", "sc", "safety"].map(String::from).to_vec(),
+            done: ["review", "rise", "window", "sc", "safety"]
+                .map(String::from)
+                .to_vec(),
             notes: String::new(),
         },
         SessionRecord {
@@ -79,10 +90,14 @@ pub fn generate(id: &str, today: NaiveDate) -> Subject {
 }
 
 fn baseline_night(r: &mut Lcg, night: NaiveDate, day: i64) -> DiaryEntry {
-    let bed = ClockTime::new(22, 30).unwrap().add(round5(r.around(0.0, 40.0)));
-    let lights_out = bed.add(round5(r.around(20.0, 15.0)).max(0));
-    let final_wake = ClockTime::new(5, 50).unwrap().add(round5(r.around(0.0, 35.0)));
-    let out_of_bed = final_wake.add(round5(r.around(70.0, 30.0)).max(5));
+    let bed = ClockTime::new(22, 30)
+        .unwrap()
+        .plus(round5(r.around(0.0, 40.0)));
+    let lights_out = bed.plus(round5(r.around(20.0, 15.0)).max(0));
+    let final_wake = ClockTime::new(5, 50)
+        .unwrap()
+        .plus(round5(r.around(0.0, 35.0)));
+    let out_of_bed = final_wake.plus(round5(r.around(70.0, 30.0)).max(5));
     let span = final_wake.offset() - lights_out.offset();
     let sol = round5(r.around(50.0, 30.0)).clamp(10, span / 3);
     let waso = round5(r.around(60.0, 30.0)).clamp(10, span / 3);
@@ -96,10 +111,22 @@ fn baseline_night(r: &mut Lcg, night: NaiveDate, day: i64) -> DiaryEntry {
         final_wake,
         out_of_bed,
         quality: r.around(2.0, 1.2).round().clamp(1.0, 5.0) as u8,
-        nap_min: if r.next() < 0.3 { round5(r.around(40.0, 20.0)).max(10) as u16 } else { 0 },
+        nap_min: if r.next() < 0.3 {
+            round5(r.around(40.0, 20.0)).max(10) as u16
+        } else {
+            0
+        },
         caffeine: r.around(3.0, 1.5).round().max(0.0) as u8,
-        alcohol: if day % 7 >= 4 { r.around(1.5, 1.5).round().max(0.0) as u8 } else { 0 },
-        sleep_aid: if r.next() < 0.6 { "zolpidem 5 mg".into() } else { String::new() },
+        alcohol: if day % 7 >= 4 {
+            r.around(1.5, 1.5).round().max(0.0) as u8
+        } else {
+            0
+        },
+        sleep_aid: if r.next() < 0.6 {
+            "zolpidem 5 mg".into()
+        } else {
+            String::new()
+        },
         notes: String::new(),
     }
 }
@@ -107,11 +134,16 @@ fn baseline_night(r: &mut Lcg, night: NaiveDate, day: i64) -> DiaryEntry {
 fn restricted_night(r: &mut Lcg, night: NaiveDate, day: i64, rx: &Prescription) -> DiaryEntry {
     // Week 3 still settling (SE in the 80s), week 4 consolidated (SE above 90).
     let settled = day >= 21;
-    let early = if r.next() < if settled { 0.08 } else { 0.25 } { round5(r.around(35.0, 15.0)) } else { round5(r.around(0.0, 8.0)) };
-    let bed = rx.bed.add(-early);
-    let lights_out = bed.add(round5(r.around(5.0, 5.0)).max(0));
-    let out_of_bed = rx.rise.add(round5(r.around(0.0, 8.0)));
-    let final_wake = out_of_bed.add(-round5(r.around(if settled { 4.0 } else { 15.0 }, 4.0)).max(0));
+    let early = if r.next() < if settled { 0.08 } else { 0.25 } {
+        round5(r.around(35.0, 15.0))
+    } else {
+        round5(r.around(0.0, 8.0))
+    };
+    let bed = rx.bed.plus(-early);
+    let lights_out = bed.plus(round5(r.around(5.0, 5.0)).max(0));
+    let out_of_bed = rx.rise.plus(round5(r.around(0.0, 8.0)));
+    let final_wake =
+        out_of_bed.plus(-round5(r.around(if settled { 4.0 } else { 15.0 }, 4.0)).max(0));
     let span = final_wake.offset() - lights_out.offset();
     let sol = round5(r.around(if settled { 9.0 } else { 22.0 }, 5.0)).clamp(5, span / 4);
     let waso = round5(r.around(if settled { 5.0 } else { 25.0 }, 5.0)).clamp(0, span / 4);
@@ -120,16 +152,31 @@ fn restricted_night(r: &mut Lcg, night: NaiveDate, day: i64, rx: &Prescription) 
         bedtime: bed,
         lights_out,
         sol_min: sol as u16,
-        awakenings: if waso == 0 { 0 } else { r.around(1.5, 1.0).round().clamp(1.0, 4.0) as u8 },
+        awakenings: if waso == 0 {
+            0
+        } else {
+            r.around(1.5, 1.0).round().clamp(1.0, 4.0) as u8
+        },
         waso_min: waso as u16,
         final_wake,
         out_of_bed,
-        quality: r.around(if settled { 3.6 } else { 2.8 }, 1.0).round().clamp(1.0, 5.0) as u8,
+        quality: r
+            .around(if settled { 3.6 } else { 2.8 }, 1.0)
+            .round()
+            .clamp(1.0, 5.0) as u8,
         nap_min: if !settled && r.next() < 0.15 { 20 } else { 0 },
         caffeine: r.around(2.0, 1.0).round().max(0.0) as u8,
         alcohol: if day % 7 == 5 { 1 } else { 0 },
-        sleep_aid: if !settled && r.next() < 0.3 { "zolpidem 5 mg".into() } else { String::new() },
-        notes: if early > 20 { "Very sleepy, went to bed early".into() } else { String::new() },
+        sleep_aid: if !settled && r.next() < 0.3 {
+            "zolpidem 5 mg".into()
+        } else {
+            String::new()
+        },
+        notes: if early > 20 {
+            "Very sleepy, went to bed early".into()
+        } else {
+            String::new()
+        },
     }
 }
 
@@ -144,7 +191,8 @@ mod tests {
         let s = generate("demo", today);
         assert!(s.entries.iter().all(|e| e.validate().is_ok()));
         assert_eq!(s.prescriptions.len(), 1);
-        let week = |w: i64| summarize(s.entries.iter().filter(|e| s.week_of(e.night) == w)).unwrap();
+        let week =
+            |w: i64| summarize(s.entries.iter().filter(|e| s.week_of(e.night) == w)).unwrap();
         assert!(week(0).se < 75.0, "baseline SE {}", week(0).se);
         assert!(week(3).se > week(0).se + 15.0);
     }

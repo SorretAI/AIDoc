@@ -1,0 +1,4 @@
+/target
+# Diary files are health data: keep real subjects out of git. Only the synthetic demo is tracked.
+/data/*
+!/data/demo.json

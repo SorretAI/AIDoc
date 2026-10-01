@@ -40,7 +40,7 @@ pub struct DiaryEntry {
 
 impl DiaryEntry {
     pub fn sleep_onset(&self) -> ClockTime {
-        self.lights_out.add(self.sol_min as i32)
+        self.lights_out.plus(self.sol_min as i32)
     }
 
     /// Checks the night is internally consistent. Times must run
@@ -174,7 +174,10 @@ impl Subject {
 
     /// The prescription in force on a given night.
     pub fn prescription_for(&self, night: NaiveDate) -> Option<&Prescription> {
-        self.prescriptions.iter().filter(|p| p.from <= night).max_by_key(|p| p.from)
+        self.prescriptions
+            .iter()
+            .filter(|p| p.from <= night)
+            .max_by_key(|p| p.from)
     }
 
     pub fn add_prescription(&mut self, rx: Prescription) {
@@ -196,9 +199,16 @@ impl Subject {
         if let Some(i) = self.sessions.iter().position(|s| s.number == number) {
             return &mut self.sessions[i];
         }
-        self.sessions.push(SessionRecord { number, ..Default::default() });
+        self.sessions.push(SessionRecord {
+            number,
+            ..Default::default()
+        });
         self.sessions.sort_by_key(|s| s.number);
-        let i = self.sessions.iter().position(|s| s.number == number).unwrap();
+        let i = self
+            .sessions
+            .iter()
+            .position(|s| s.number == number)
+            .unwrap();
         &mut self.sessions[i]
     }
 

@@ -21,14 +21,20 @@ pub struct NightMetrics {
 
 pub fn night(e: &DiaryEntry) -> NightMetrics {
     let tib = e.out_of_bed.offset() - e.bedtime.offset();
-    let tst = (e.final_wake.offset() - e.lights_out.offset() - e.sol_min as i32 - e.waso_min as i32).max(0);
+    let tst =
+        (e.final_wake.offset() - e.lights_out.offset() - e.sol_min as i32 - e.waso_min as i32)
+            .max(0);
     NightMetrics {
         tib,
         tst,
         sol: e.sol_min as i32,
         waso: e.waso_min as i32,
         ema: e.out_of_bed.offset() - e.final_wake.offset(),
-        se: if tib > 0 { 100.0 * tst as f64 / tib as f64 } else { 0.0 },
+        se: if tib > 0 {
+            100.0 * tst as f64 / tib as f64
+        } else {
+            0.0
+        },
     }
 }
 
@@ -161,7 +167,10 @@ mod tests {
             note: String::new(),
         };
         let e = entry("23:30", "23:45", 10, 0, "05:50", "06:40");
-        assert_eq!(deviations(&e, &rx), vec![Deviation::EarlyBed(60), Deviation::LateRise(40)]);
+        assert_eq!(
+            deviations(&e, &rx),
+            vec![Deviation::EarlyBed(60), Deviation::LateRise(40)]
+        );
         let ok = entry("00:40", "00:40", 10, 0, "05:50", "06:10");
         assert!(deviations(&ok, &rx).is_empty());
     }

@@ -41,11 +41,20 @@ fn parse_args() -> Result<Args> {
             "--data" => args.data = it.next().context("--data needs a directory")?.into(),
             "--today" => {
                 let d = it.next().context("--today needs a date")?;
-                args.today = NaiveDate::parse_from_str(&d, "%Y-%m-%d").context("--today must be YYYY-MM-DD")?;
+                args.today = NaiveDate::parse_from_str(&d, "%Y-%m-%d")
+                    .context("--today must be YYYY-MM-DD")?;
             }
             "--force" => args.force = true,
             "-h" | "--help" => {
-                println!("{}", include_str!("main.rs").lines().take_while(|l| l.starts_with("//!")).map(|l| l.trim_start_matches("//!").trim_start_matches(' ')).collect::<Vec<_>>().join("\n"));
+                println!(
+                    "{}",
+                    include_str!("main.rs")
+                        .lines()
+                        .take_while(|l| l.starts_with("//!"))
+                        .map(|l| l.trim_start_matches("//!").trim_start_matches(' '))
+                        .collect::<Vec<_>>()
+                        .join("\n")
+                );
                 std::process::exit(0);
             }
             s if s.starts_with("--") => bail!("unknown option {s}"),
@@ -89,7 +98,10 @@ fn main() -> Result<()> {
             use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
             let (s, path) = load(&args, false)?;
             let mut keys = Vec::new();
-            for tok in std::env::var("CBTI_KEYS").unwrap_or_default().split_whitespace() {
+            for tok in std::env::var("CBTI_KEYS")
+                .unwrap_or_default()
+                .split_whitespace()
+            {
                 match tok {
                     "Tab" => keys.push(KeyEvent::from(KeyCode::Tab)),
                     "Down" => keys.push(KeyEvent::from(KeyCode::Down)),
@@ -103,7 +115,12 @@ fn main() -> Result<()> {
                 }
             }
             let (w, h) = (140, 42);
-            println!("{}", tui::snapshot_html(s, path, args.today, &keys, w, h)?);
+            let _ = path; // never write replayed keys into the real subject file
+            let scratch = std::env::temp_dir().join("cbti-snapshot.json");
+            println!(
+                "{}",
+                tui::snapshot_html(s, scratch, args.today, &keys, w, h)?
+            );
         }
         _ => {
             let (s, path) = load(&args, true)?;
@@ -128,21 +145,48 @@ fn load(args: &Args, create: bool) -> Result<(Subject, PathBuf)> {
 }
 
 fn report(s: &Subject, today: NaiveDate) {
-    println!("{}  started {}  {} nights logged", s.id, s.started, s.entries.len());
-    println!("{:>4}  {:>6}  {:>6}  {:>6}  {:>6}  {:>6}  {:>5}", "week", "nights", "in bed", "asleep", "SOL", "WASO", "SE");
+    println!(
+        "{}  started {}  {} nights logged",
+        s.id,
+        s.started,
+        s.entries.len()
+    );
+    println!(
+        "{:>4}  {:>6}  {:>6}  {:>6}  {:>6}  {:>6}  {:>5}",
+        "week", "nights", "in bed", "asleep", "SOL", "WASO", "SE"
+    );
     let weeks = s.entries.last().map_or(0, |e| s.week_of(e.night) + 1);
     for w in 0..weeks {
         if let Some(m) = summarize(s.entries.iter().filter(|e| s.week_of(e.night) == w)) {
             println!(
                 "{:>4}  {:>6}  {:>6}  {:>6}  {:>6.0}  {:>6.0}  {:>4.0}%",
-                w + 1, m.nights, fmt_duration(m.tib), fmt_duration(m.tst), m.sol, m.waso, m.se
+                w + 1,
+                m.nights,
+                fmt_duration(m.tib),
+                fmt_duration(m.tst),
+                m.sol,
+                m.waso,
+                m.se
             );
         }
     }
     match recommend(s, today) {
-        Recommendation::CollectBaseline { have, need } => println!("next: collect baseline ({have}/{need} nights)"),
-        Recommendation::Initial { rx, mean_tst, .. } => println!("next: set first window {}-{} (mean TST {})", rx.bed, rx.rise, fmt_duration(mean_tst)),
-        Recommendation::Wait { since, days, nights } => println!("next: wait (window since {since}, {days} days, {nights} nights)"),
-        Recommendation::Review { reason, rx, .. } => println!("next: {reason} -> {}-{}", rx.bed, rx.rise),
+        Recommendation::CollectBaseline { have, need } => {
+            println!("next: collect baseline ({have}/{need} nights)")
+        }
+        Recommendation::Initial { rx, mean_tst, .. } => println!(
+            "next: set first window {}-{} (mean TST {})",
+            rx.bed,
+            rx.rise,
+            fmt_duration(mean_tst)
+        ),
+        Recommendation::Wait {
+            since,
+            days,
+            nights,
+        } => println!("next: wait (window since {since}, {days} days, {nights} nights)"),
+        Recommendation::Review { reason, rx, .. } => {
+            println!("next: {reason} -> {}-{}", rx.bed, rx.rise)
+        }
     }
 }

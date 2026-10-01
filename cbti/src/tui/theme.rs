@@ -38,7 +38,9 @@ pub fn title(focused: bool) -> Style {
     if focused { strong() } else { dim() }
 }
 pub fn selected() -> Style {
-    Style::default().fg(SLEEP).add_modifier(Modifier::BOLD | Modifier::REVERSED)
+    Style::default()
+        .fg(SLEEP)
+        .add_modifier(Modifier::BOLD | Modifier::REVERSED)
 }
 pub fn cursor_row() -> Style {
     Style::default().add_modifier(Modifier::BOLD)

@@ -29,9 +29,15 @@ pub struct Thresholds {
 impl Thresholds {
     pub fn for_subject(s: &Subject) -> Self {
         if s.older_adult {
-            Self { extend_at: 85.0, reduce_below: 80.0 }
+            Self {
+                extend_at: 85.0,
+                reduce_below: 80.0,
+            }
         } else {
-            Self { extend_at: 90.0, reduce_below: 85.0 }
+            Self {
+                extend_at: 90.0,
+                reduce_below: 85.0,
+            }
         }
     }
 }
@@ -41,11 +47,25 @@ pub enum Recommendation {
     /// Not enough baseline diary to set a window.
     CollectBaseline { have: usize, need: usize },
     /// Set the first sleep window.
-    Initial { mean_tst: f64, nights: usize, rx: Prescription },
+    Initial {
+        mean_tst: f64,
+        nights: usize,
+        rx: Prescription,
+    },
     /// Window in force; review not due yet.
-    Wait { since: NaiveDate, days: i64, nights: usize },
+    Wait {
+        since: NaiveDate,
+        days: i64,
+        nights: usize,
+    },
     /// Weekly review result.
-    Review { se: f64, nights: usize, delta: i32, reason: String, rx: Prescription },
+    Review {
+        se: f64,
+        nights: usize,
+        delta: i32,
+        reason: String,
+        rx: Prescription,
+    },
 }
 
 impl Recommendation {
@@ -73,7 +93,12 @@ pub fn median_rise(entries: &[&DiaryEntry]) -> Option<ClockTime> {
 }
 
 /// Nights strictly before `today`, most recent `limit`.
-fn recent<'a>(entries: &'a [DiaryEntry], from: Option<NaiveDate>, today: NaiveDate, limit: usize) -> Vec<&'a DiaryEntry> {
+fn recent(
+    entries: &[DiaryEntry],
+    from: Option<NaiveDate>,
+    today: NaiveDate,
+    limit: usize,
+) -> Vec<&DiaryEntry> {
     let mut v: Vec<&DiaryEntry> = entries
         .iter()
         .filter(|e| e.night < today && from.is_none_or(|f| e.night >= f))
@@ -88,7 +113,10 @@ pub fn recommend(s: &Subject, today: NaiveDate) -> Recommendation {
     let Some(current) = s.prescription_for(today) else {
         let baseline = recent(&s.entries, None, today, 14);
         if baseline.len() < BASELINE_NIGHTS {
-            return Recommendation::CollectBaseline { have: baseline.len(), need: BASELINE_NIGHTS };
+            return Recommendation::CollectBaseline {
+                have: baseline.len(),
+                need: BASELINE_NIGHTS,
+            };
         }
         let sum = summarize(baseline.iter().copied()).unwrap();
         let window = round_to_step(sum.tst).max(FLOOR_MIN);
@@ -98,7 +126,7 @@ pub fn recommend(s: &Subject, today: NaiveDate) -> Recommendation {
             nights: sum.nights,
             rx: Prescription {
                 from: today,
-                bed: rise.add(-window),
+                bed: rise.plus(-window),
                 rise,
                 note: format!("Initial window from mean TST {:.0} min", sum.tst),
             },
@@ -108,20 +136,48 @@ pub fn recommend(s: &Subject, today: NaiveDate) -> Recommendation {
     let days = (today - current.from).num_days();
     let window_nights = recent(&s.entries, Some(current.from), today, 7);
     if days < REVIEW_DAYS || window_nights.len() < REVIEW_MIN_NIGHTS {
-        return Recommendation::Wait { since: current.from, days, nights: window_nights.len() };
+        return Recommendation::Wait {
+            since: current.from,
+            days,
+            nights: window_nights.len(),
+        };
     }
     let sum = summarize(window_nights.iter().copied()).unwrap();
     let window = current.window_min();
     let (delta, reason) = if sum.se >= th.extend_at {
-        (STEP_MIN, format!("SE {:.0}% is at or above {:.0}%: extend by 15 min", sum.se, th.extend_at))
+        (
+            STEP_MIN,
+            format!(
+                "SE {:.0}% is at or above {:.0}%: extend by 15 min",
+                sum.se, th.extend_at
+            ),
+        )
     } else if sum.se < th.reduce_below {
         if window - STEP_MIN < FLOOR_MIN {
-            (0, format!("SE {:.0}% is below {:.0}% but the window is at the 5 h floor: keep", sum.se, th.reduce_below))
+            (
+                0,
+                format!(
+                    "SE {:.0}% is below {:.0}% but the window is at the 5 h floor: keep",
+                    sum.se, th.reduce_below
+                ),
+            )
         } else {
-            (-STEP_MIN, format!("SE {:.0}% is below {:.0}%: shorten by 15 min", sum.se, th.reduce_below))
+            (
+                -STEP_MIN,
+                format!(
+                    "SE {:.0}% is below {:.0}%: shorten by 15 min",
+                    sum.se, th.reduce_below
+                ),
+            )
         }
     } else {
-        (0, format!("SE {:.0}% is between {:.0}% and {:.0}%: keep the window", sum.se, th.reduce_below, th.extend_at))
+        (
+            0,
+            format!(
+                "SE {:.0}% is between {:.0}% and {:.0}%: keep the window",
+                sum.se, th.reduce_below, th.extend_at
+            ),
+        )
     };
     let new_window = window + delta;
     Recommendation::Review {
@@ -129,7 +185,12 @@ pub fn recommend(s: &Subject, today: NaiveDate) -> Recommendation {
         nights: sum.nights,
         delta,
         reason: reason.clone(),
-        rx: Prescription { from: today, bed: current.rise.add(-new_window), rise: current.rise, note: reason },
+        rx: Prescription {
+            from: today,
+            bed: current.rise.plus(-new_window),
+            rise: current.rise,
+            note: reason,
+        },
     }
 }
 
@@ -167,7 +228,10 @@ mod tests {
         for n in 0..5 {
             s.upsert_entry(night(n, "22:30", 60, 60, "05:30", "07:00"));
         }
-        assert_eq!(recommend(&s, day(5)), Recommendation::CollectBaseline { have: 5, need: 7 });
+        assert_eq!(
+            recommend(&s, day(5)),
+            Recommendation::CollectBaseline { have: 5, need: 7 }
+        );
     }
 
     #[test]
@@ -178,7 +242,9 @@ mod tests {
         for n in 0..7 {
             s.upsert_entry(night(n, "22:30", 60, 60, "05:30", "07:00"));
         }
-        let Recommendation::Initial { rx, .. } = recommend(&s, day(7)) else { panic!() };
+        let Recommendation::Initial { rx, .. } = recommend(&s, day(7)) else {
+            panic!()
+        };
         assert_eq!(rx.window_min(), 300);
         assert_eq!(rx.bed, ClockTime::parse("01:30").unwrap());
 
@@ -203,7 +269,9 @@ mod tests {
         for n in 0..7 {
             s.upsert_entry(night(n, "00:30", 10, 10, "06:30", "06:30"));
         }
-        let Recommendation::Review { delta, rx, .. } = recommend(&s, day(7)) else { panic!() };
+        let Recommendation::Review { delta, rx, .. } = recommend(&s, day(7)) else {
+            panic!()
+        };
         assert_eq!(delta, 15);
         assert_eq!(rx.bed, ClockTime::parse("00:15").unwrap());
 
@@ -211,7 +279,9 @@ mod tests {
         for n in 0..7 {
             s.upsert_entry(night(n, "00:30", 36, 36, "06:30", "06:30"));
         }
-        let Recommendation::Review { delta, .. } = recommend(&s, day(7)) else { panic!() };
+        let Recommendation::Review { delta, .. } = recommend(&s, day(7)) else {
+            panic!()
+        };
         assert_eq!(delta, -15);
 
         // Too early for a review.

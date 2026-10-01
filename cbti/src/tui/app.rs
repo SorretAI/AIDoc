@@ -44,8 +44,15 @@ pub enum PromptKind {
 }
 
 pub enum Overlay {
-    Confirm { message: String, action: Pending },
-    Prompt { label: String, buffer: String, kind: PromptKind },
+    Confirm {
+        message: String,
+        action: Pending,
+    },
+    Prompt {
+        label: String,
+        buffer: String,
+        kind: PromptKind,
+    },
     Help,
 }
 
@@ -191,9 +198,16 @@ impl App {
         let label = entry.night.format("%a %d %b").to_string();
         let se = night(&entry).se;
         let replaced = self.subject.upsert_entry(entry.clone());
-        self.diary_sel = self.subject.entries.iter().position(|e| e.night == entry.night).unwrap_or(0);
+        self.diary_sel = self
+            .subject
+            .entries
+            .iter()
+            .position(|e| e.night == entry.night)
+            .unwrap_or(0);
         let verb = if replaced { "Updated" } else { "Saved" };
-        self.persist(format!("{verb} the night of {label}, sleep efficiency {se:.0}%"));
+        self.persist(format!(
+            "{verb} the night of {label}, sleep efficiency {se:.0}%"
+        ));
         self.form = Form::blank(self.next_night(Some(entry.night)));
     }
 
@@ -212,12 +226,17 @@ impl App {
             KeyCode::Char('e') | KeyCode::Enter => {
                 self.form = Form::from_entry(&self.subject.entries[self.diary_sel]);
                 self.tab = Tab::Tonight;
-                self.status = Some(Status::Ok("Editing this night. Ctrl+S saves over it.".into()));
+                self.status = Some(Status::Ok(
+                    "Editing this night. Ctrl+S saves over it.".into(),
+                ));
             }
             KeyCode::Char('d') | KeyCode::Delete => {
                 let night = self.subject.entries[self.diary_sel].night;
                 self.overlay = Some(Overlay::Confirm {
-                    message: format!("Delete the diary entry for the night of {}?", night.format("%a %d %b")),
+                    message: format!(
+                        "Delete the diary entry for the night of {}?",
+                        night.format("%a %d %b")
+                    ),
                     action: Pending::DeleteEntry(night),
                 });
             }
@@ -250,13 +269,21 @@ impl App {
                             action: Pending::ApplyRx(rx.clone()),
                         })
                     }
-                    None => self.status = Some(Status::Err("Nothing to apply yet. See the next step panel.".into())),
+                    None => {
+                        self.status = Some(Status::Err(
+                            "Nothing to apply yet. See the next step panel.".into(),
+                        ))
+                    }
                 }
             }
             KeyCode::Char('r') => {
                 self.overlay = Some(Overlay::Prompt {
                     label: "Fixed rise time, every day of the week".into(),
-                    buffer: self.subject.rise_target.map(|t| t.to_string()).unwrap_or_default(),
+                    buffer: self
+                        .subject
+                        .rise_target
+                        .map(|t| t.to_string())
+                        .unwrap_or_default(),
                     kind: PromptKind::RiseTarget,
                 })
             }
@@ -275,7 +302,11 @@ impl App {
     }
 
     pub fn proto_item_count(&self) -> usize {
-        if self.proto_sel == 0 { SCREENING.len() } else { SESSIONS[self.proto_sel - 1].steps.len() }
+        if self.proto_sel == 0 {
+            SCREENING.len()
+        } else {
+            SESSIONS[self.proto_sel - 1].steps.len()
+        }
     }
 
     fn on_protocol_key(&mut self, key: KeyEvent) {
@@ -309,7 +340,12 @@ impl App {
                 let number = self.proto_sel as u8;
                 self.overlay = Some(Overlay::Prompt {
                     label: format!("ISI score for session {number}, 0 to 28"),
-                    buffer: self.subject.session(number).and_then(|s| s.isi).map(|v| v.to_string()).unwrap_or_default(),
+                    buffer: self
+                        .subject
+                        .session(number)
+                        .and_then(|s| s.isi)
+                        .map(|v| v.to_string())
+                        .unwrap_or_default(),
                     kind: PromptKind::Isi(number),
                 });
             }
@@ -322,7 +358,11 @@ impl App {
             let item = &SCREENING[self.proto_item];
             self.subject.toggle_screening(item.key);
             let present = self.subject.screening.iter().any(|k| k == item.key);
-            let msg = if present { "Caution recorded" } else { "Caution cleared" };
+            let msg = if present {
+                "Caution recorded"
+            } else {
+                "Caution cleared"
+            };
             self.persist(msg.into());
             return;
         }
@@ -337,32 +377,57 @@ impl App {
             rec.date.get_or_insert(today);
         }
         let (done, total) = (rec.done.len(), def.steps.len());
-        self.persist(format!("Session {}: {done} of {total} steps done", def.number));
+        self.persist(format!(
+            "Session {}: {done} of {total} steps done",
+            def.number
+        ));
     }
 
     fn on_overlay_key(&mut self, key: KeyEvent) {
-        let Some(overlay) = self.overlay.take() else { return };
+        let Some(overlay) = self.overlay.take() else {
+            return;
+        };
         match overlay {
             Overlay::Help => {}
             Overlay::Confirm { message, action } => match key.code {
                 KeyCode::Char('y') | KeyCode::Char('Y') => self.confirm(action),
-                KeyCode::Char('n') | KeyCode::Esc => self.status = Some(Status::Ok("Cancelled".into())),
+                KeyCode::Char('n') | KeyCode::Esc => {
+                    self.status = Some(Status::Ok("Cancelled".into()))
+                }
                 _ => self.overlay = Some(Overlay::Confirm { message, action }),
             },
-            Overlay::Prompt { label, mut buffer, kind } => match key.code {
+            Overlay::Prompt {
+                label,
+                mut buffer,
+                kind,
+            } => match key.code {
                 KeyCode::Esc => self.status = Some(Status::Ok("Cancelled".into())),
                 KeyCode::Enter => self.submit_prompt(label, buffer, kind),
                 KeyCode::Backspace => {
                     buffer.pop();
-                    self.overlay = Some(Overlay::Prompt { label, buffer, kind });
+                    self.overlay = Some(Overlay::Prompt {
+                        label,
+                        buffer,
+                        kind,
+                    });
                 }
                 KeyCode::Char(c) if c.is_ascii_digit() || c == ':' => {
                     if buffer.len() < 5 {
                         buffer.push(c);
                     }
-                    self.overlay = Some(Overlay::Prompt { label, buffer, kind });
+                    self.overlay = Some(Overlay::Prompt {
+                        label,
+                        buffer,
+                        kind,
+                    });
                 }
-                _ => self.overlay = Some(Overlay::Prompt { label, buffer, kind }),
+                _ => {
+                    self.overlay = Some(Overlay::Prompt {
+                        label,
+                        buffer,
+                        kind,
+                    })
+                }
             },
         }
     }
@@ -376,7 +441,11 @@ impl App {
                 }
                 None => {
                     self.status = Some(Status::Err("Enter a time like 06:30".into()));
-                    self.overlay = Some(Overlay::Prompt { label, buffer, kind });
+                    self.overlay = Some(Overlay::Prompt {
+                        label,
+                        buffer,
+                        kind,
+                    });
                 }
             },
             PromptKind::Isi(number) => match buffer.parse::<u8>() {
@@ -393,7 +462,11 @@ impl App {
                 }
                 _ => {
                     self.status = Some(Status::Err("ISI is a whole number from 0 to 28".into()));
-                    self.overlay = Some(Overlay::Prompt { label, buffer, kind });
+                    self.overlay = Some(Overlay::Prompt {
+                        label,
+                        buffer,
+                        kind,
+                    });
                 }
             },
         }
@@ -403,7 +476,9 @@ impl App {
         match action {
             Pending::DeleteEntry(night) => {
                 self.subject.remove_entry(night);
-                self.diary_sel = self.diary_sel.min(self.subject.entries.len().saturating_sub(1));
+                self.diary_sel = self
+                    .diary_sel
+                    .min(self.subject.entries.len().saturating_sub(1));
                 self.persist(format!("Deleted the night of {}", night.format("%a %d %b")));
             }
             Pending::ApplyRx(rx) => {

@@ -18,10 +18,10 @@ pub fn run(subject: Subject, path: PathBuf, today: NaiveDate) -> Result<()> {
     let result = (|| -> Result<()> {
         while !app.quit {
             terminal.draw(|f| ui::draw(f, &app))?;
-            if let Event::Key(key) = event::read()? {
-                if key.kind == KeyEventKind::Press {
-                    app.on_key(key);
-                }
+            if let Event::Key(key) = event::read()?
+                && key.kind == KeyEventKind::Press
+            {
+                app.on_key(key);
             }
         }
         Ok(())
@@ -32,7 +32,14 @@ pub fn run(subject: Subject, path: PathBuf, today: NaiveDate) -> Result<()> {
 
 /// Renders views off-screen to coloured HTML, for docs and visual review.
 /// `keys` is a list of key presses replayed first (e.g. Tab, Down, chars).
-pub fn snapshot_html(subject: Subject, path: PathBuf, today: NaiveDate, keys: &[ratatui::crossterm::event::KeyEvent], width: u16, height: u16) -> Result<String> {
+pub fn snapshot_html(
+    subject: Subject,
+    path: PathBuf,
+    today: NaiveDate,
+    keys: &[ratatui::crossterm::event::KeyEvent],
+    width: u16,
+    height: u16,
+) -> Result<String> {
     use ratatui::backend::TestBackend;
     use ratatui::style::{Color, Modifier};
     let mut app = app::App::new(subject, path, today);
@@ -46,7 +53,9 @@ pub fn snapshot_html(subject: Subject, path: PathBuf, today: NaiveDate, keys: &[
         Color::Rgb(r, g, b) => format!("#{r:02x}{g:02x}{b:02x}"),
         _ => default.to_string(),
     };
-    let mut html = String::from("<meta charset=\"utf-8\"><pre style=\"background:#14161f;color:#d8dce8;font:14px/1.25 'JetBrains Mono',monospace;padding:12px;display:inline-block\">");
+    let mut html = String::from(
+        "<meta charset=\"utf-8\"><pre style=\"background:#14161f;color:#d8dce8;font:14px/1.25 'JetBrains Mono',monospace;padding:12px;display:inline-block\">",
+    );
     for y in 0..height {
         for x in 0..width {
             let cell = &buf[(x, y)];
@@ -54,10 +63,23 @@ pub fn snapshot_html(subject: Subject, path: PathBuf, today: NaiveDate, keys: &[
             if cell.modifier.contains(Modifier::REVERSED) {
                 std::mem::swap(&mut fg, &mut bg);
             }
-            let bold = if cell.modifier.contains(Modifier::BOLD) { "font-weight:bold;" } else { "" };
-            let ul = if cell.modifier.contains(Modifier::UNDERLINED) { "text-decoration:underline;" } else { "" };
-            let sym = match cell.symbol() { "<" => "&lt;", ">" => "&gt;", "&" => "&amp;", s => s };
-            html.push_str(&format!("<span style=\"color:{fg};background:{bg};{bold}{ul}\">{sym}</span>"));
+            let bold = if cell.modifier.contains(Modifier::BOLD) {
+                "font-weight:bold;"
+            } else {
+                ""
+            };
+            let ul = if cell.modifier.contains(Modifier::UNDERLINED) {
+                "text-decoration:underline;"
+            } else {
+                ""
+            };
+            let sym = match cell.symbol() {
+                "<" => "&lt;",
+                ">" => "&gt;",
+                "&" => "&amp;",
+                s => s,
+            };
+            html.push_str(&format!("<span style=\"display:inline-block;width:1ch;overflow:hidden;color:{fg};background:{bg};{bold}{ul}\">{sym}</span>"));
         }
         html.push('\n');
     }

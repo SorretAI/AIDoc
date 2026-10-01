@@ -28,11 +28,23 @@ pub const SESSIONS: &[SessionDef] = &[
         title: "Assessment and baseline",
         aim: "Confirm the diagnosis, screen for cautions, and start the diary.",
         steps: &[
-            step("dx", "Confirm chronic insomnia: 3+ nights a week, 3+ months, with daytime impairment"),
-            step("screen", "Work through the screening list for sleep restriction cautions"),
+            step(
+                "dx",
+                "Confirm chronic insomnia: 3+ nights a week, 3+ months, with daytime impairment",
+            ),
+            step(
+                "screen",
+                "Work through the screening list for sleep restriction cautions",
+            ),
             step("isi", "Record a baseline ISI score"),
-            step("meds", "Note current sleep medication and who prescribes it"),
-            step("diary", "Teach the diary: fill it in each morning, estimates are fine"),
+            step(
+                "meds",
+                "Note current sleep medication and who prescribes it",
+            ),
+            step(
+                "diary",
+                "Teach the diary: fill it in each morning, estimates are fine",
+            ),
         ],
     },
     SessionDef {
@@ -42,10 +54,19 @@ pub const SESSIONS: &[SessionDef] = &[
         steps: &[
             step("review", "Review at least 7 nights of baseline diary"),
             step("rise", "Agree a fixed rise time for all 7 days"),
-            step("window", "Set the window from mean total sleep time, never under 5 h"),
-            step("sc", "Stimulus control: bed for sleep and sex only; get up if awake about 20 min"),
+            step(
+                "window",
+                "Set the window from mean total sleep time, never under 5 h",
+            ),
+            step(
+                "sc",
+                "Stimulus control: bed for sleep and sex only; get up if awake about 20 min",
+            ),
             step("naps", "No napping; no lying down outside the window"),
-            step("safety", "Warn about sleepiness: no driving or risky tasks when drowsy"),
+            step(
+                "safety",
+                "Warn about sleepiness: no driving or risky tasks when drowsy",
+            ),
         ],
     },
     SessionDef {
@@ -53,9 +74,18 @@ pub const SESSIONS: &[SessionDef] = &[
         title: "Titration and adherence",
         aim: "Adjust the window by sleep efficiency and solve adherence problems.",
         steps: &[
-            step("titrate", "Titrate the window by last week's sleep efficiency"),
-            step("adherence", "Go through early bedtimes, late rises and naps"),
-            step("hygiene", "Sleep hygiene: caffeine, alcohol, light, exercise, bedroom"),
+            step(
+                "titrate",
+                "Titrate the window by last week's sleep efficiency",
+            ),
+            step(
+                "adherence",
+                "Go through early bedtimes, late rises and naps",
+            ),
+            step(
+                "hygiene",
+                "Sleep hygiene: caffeine, alcohol, light, exercise, bedroom",
+            ),
             step("isi", "Record ISI"),
         ],
     },
@@ -65,9 +95,18 @@ pub const SESSIONS: &[SessionDef] = &[
         aim: "Work on the beliefs and worry that keep insomnia going.",
         steps: &[
             step("titrate", "Titrate the window"),
-            step("beliefs", "Identify unhelpful beliefs about sleep (DBAS-16)"),
-            step("decat", "Test catastrophic predictions about the day after a poor night"),
-            step("worry", "Constructive worry: write worries and plans before the wind-down"),
+            step(
+                "beliefs",
+                "Identify unhelpful beliefs about sleep (DBAS-16)",
+            ),
+            step(
+                "decat",
+                "Test catastrophic predictions about the day after a poor night",
+            ),
+            step(
+                "worry",
+                "Constructive worry: write worries and plans before the wind-down",
+            ),
         ],
     },
     SessionDef {
@@ -77,7 +116,10 @@ pub const SESSIONS: &[SessionDef] = &[
         steps: &[
             step("titrate", "Titrate the window"),
             step("relax", "Practise a relaxation or wind-down routine"),
-            step("meds", "Review medication plan with the prescriber if tapering"),
+            step(
+                "meds",
+                "Review medication plan with the prescriber if tapering",
+            ),
             step("isi", "Record ISI"),
         ],
     },
@@ -88,7 +130,10 @@ pub const SESSIONS: &[SessionDef] = &[
         steps: &[
             step("isi", "Record a final ISI and compare it with baseline"),
             step("works", "Summarise what helped most"),
-            step("setback", "Setback plan: back to the window and bed-only rules after a run of poor nights"),
+            step(
+                "setback",
+                "Setback plan: back to the window and bed-only rules after a run of poor nights",
+            ),
             step("followup", "Book follow-up or booster session"),
         ],
     },
@@ -106,7 +151,10 @@ pub const SCREENING: &[Step] = &[
 ];
 
 pub fn screening_text(key: &str) -> &'static str {
-    SCREENING.iter().find(|s| s.key == key).map_or("Unknown item", |s| s.text)
+    SCREENING
+        .iter()
+        .find(|s| s.key == key)
+        .map_or("Unknown item", |s| s.text)
 }
 
 /// AASM combination-treatment guideline, recommendations 1 and 2

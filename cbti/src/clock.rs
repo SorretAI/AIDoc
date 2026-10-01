@@ -33,7 +33,7 @@ impl ClockTime {
         Self::from_minutes(offset + 720)
     }
 
-    pub fn add(self, minutes: i32) -> Self {
+    pub fn plus(self, minutes: i32) -> Self {
         Self::from_minutes(self.minutes() + minutes)
     }
 
