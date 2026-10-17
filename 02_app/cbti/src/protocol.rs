@@ -158,7 +158,7 @@ pub fn screening_text(key: &str) -> &'static str {
 }
 
 /// AASM combination-treatment guideline, recommendations 1 and 2
-/// (stage/output/cbtI_aasm_guideline.md).
+/// (_config/sources/cbtI_aasm_guideline.md, workspace root).
 pub const AASM_NOTES: &[&str] = &[
     "CBT-I with medication is suggested over medication alone (conditional, low certainty).",
     "Adding medication to CBT-I is suggested against over CBT-I alone (conditional, low certainty).",
