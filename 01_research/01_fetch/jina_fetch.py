@@ -16,7 +16,7 @@ Usage:
 
 Examples:
     python jina_fetch.py https://pmc.ncbi.nlm.nih.gov/articles/PMC13076838/
-    python jina_fetch.py https://pmc.ncbi.nlm.nih.gov/articles/PMC13076838/ STAGING/06_memory_protocol_research/output/cbtI_aasm_guideline.md
+    python jina_fetch.py https://pmc.ncbi.nlm.nih.gov/articles/PMC13076838/ 01_research/01_fetch/output/cbtI_aasm_guideline.md
 """
 
 import sys

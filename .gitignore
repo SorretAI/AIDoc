@@ -1,0 +1,14 @@
+# Subject records are health data. Only the contract and the template are tracked.
+/03_subjects/*
+!/03_subjects/CONTEXT.md
+!/03_subjects/_templates/
+
+# Recordings and transcripts, anywhere
+*.wav
+*.m4a
+*.mp3
+*.ogg
+*.transcript.md
+
+# Secrets (Discord webhook etc.)
+.env
